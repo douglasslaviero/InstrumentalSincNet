@@ -56,7 +56,7 @@ def create_batches_rnd(batch_size,data_list,N_snt,wlen,fact_amp):
   waveform = waveform[0]
   sig_batch[i,:]=waveform[snt_beg:snt_end]*rand_amp_arr[i]
 
-  lab_batch[i]=data_list['language'].iloc[snt_id_arr[i]]
+  lab_batch[i]=data_list['instrument_id'].iloc[snt_id_arr[i]]
   
  inp=Variable(torch.from_numpy(sig_batch).float().cuda().contiguous())
  lab=Variable(torch.from_numpy(lab_batch).float().cuda().contiguous())
@@ -66,7 +66,7 @@ def create_batches_rnd(batch_size,data_list,N_snt,wlen,fact_amp):
 
 
 # Reading cfg file
-options=read_conf_inp('cfg/SLID.cfg')
+options=read_conf_inp('cfg/InstID.cfg')
 
 #[windowing]
 fs=int(options.fs)
@@ -118,7 +118,10 @@ pt_file=options.pt_file
 # build base 
 df = pd.read_csv(options.csv_path, sep=',')
 
-train, test = train_test_split(df, test_size=1/3, shuffle=True)
+X = df.drop(columns=['instrument'])
+y = df['instrument']
+
+train, test, y_train, y_test = train_test_split(X, y, test_size=1/3, shuffle=True, random_state=seed, stratify=y)
 
 # training list
 snt_tr=len(train.index)
@@ -126,9 +129,23 @@ snt_tr=len(train.index)
 # test list
 snt_te=len(test.index)
 
-language = test['instrument']
-print('Test labels confusion matrix:')
-print(confusion_matrix(language, language))
+instrument_id = test['instrument_id']
+
+print('Test labels confusion matrix (for name):')
+print(confusion_matrix(y_test, y_test))
+
+# testing if it's was split correctly
+# print(len(df[df['instrument'] == 'cla']))
+# print(len(X_train[X_train['instrument_id'] == 4]))
+# print(len(X_test[X_test['instrument_id'] == 4]))
+
+# from collections import Counter
+
+# y_train_counts = Counter(y_train)
+# y_test_counts = Counter(y_test)
+
+# print(y_train_counts['cla'])
+# print(y_test_counts['cla'])
 
 # Folder creation
 try:
@@ -169,7 +186,7 @@ CNN_arch = {'input_dim': wlen,
           }
 
 CNN_net=SincNet(CNN_arch)
-#CNN_net.cuda()
+CNN_net.cuda()
 
 DNN1_arch = {'input_dim': CNN_net.out_dim,
           'fc_lay': fc_lay,
@@ -182,7 +199,7 @@ DNN1_arch = {'input_dim': CNN_net.out_dim,
           }
 
 DNN1_net=MLP(DNN1_arch)
-#DNN1_net.cuda()
+DNN1_net.cuda()
 
 
 DNN2_arch = {'input_dim':fc_lay[-1] ,
@@ -197,7 +214,7 @@ DNN2_arch = {'input_dim':fc_lay[-1] ,
 
 
 DNN2_net=MLP(DNN2_arch)
-#DNN2_net.cuda()
+DNN2_net.cuda()
 
 
 if pt_file!='none' and exists(pt_file):
@@ -267,7 +284,7 @@ for epoch in range(N_epochs):
 
     for i in range(snt_te):
        
-     track_file = data_folder+test['track_path_wav'].iloc[i]
+     track_file = test['full_path'].iloc[i]
      #  [signal, fs] = librosa.load(track_file)
     #  [ signal, fs ] = sf.read(track_file)
      waveform, _ = torchaudio.load(track_file)
@@ -281,14 +298,13 @@ for epoch in range(N_epochs):
       continue
 
     #  waveform=torch.from_numpy(waveform).float().cuda().contiguous()
-     lab_batch=test['language'].iloc[i]
+     lab_batch=test['instrument_id'].iloc[i]
     
      # split signals into chunks
      beg_samp=0
      end_samp=wlen
      
      N_fr=int((len(waveform)-wlen)/(wshift))
-     
 
      sig_arr=torch.zeros([Batch_dev,wlen]).float().cuda().contiguous()
      lab= Variable((torch.zeros(N_fr+1)+lab_batch).cuda().contiguous().long())
