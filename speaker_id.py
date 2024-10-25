@@ -54,7 +54,14 @@ def create_batches_rnd(batch_size,data_list,N_snt,wlen,fact_amp):
 
     # print('WARNING: stereo to mono: '+track_file)
   waveform = waveform[0]
-  sig_batch[i,:]=waveform[snt_beg:snt_end]*rand_amp_arr[i]
+  # sig_batch[i,:]=waveform[snt_beg:snt_end]*rand_amp_arr[i]
+
+  # Ensure waveform is explicitly converted to a NumPy array
+  numpy_waveform = waveform[snt_beg:snt_end].numpy() if hasattr(waveform[snt_beg:snt_end], 'numpy') else np.asarray(waveform[snt_beg:snt_end])
+
+  # Perform the assignment with the multiplication
+  sig_batch[i, :] = numpy_waveform * rand_amp_arr[i]
+
 
   lab_batch[i]=data_list['instrument_id'].iloc[snt_id_arr[i]]
   
