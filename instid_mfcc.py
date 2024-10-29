@@ -5,6 +5,7 @@
 # Description: 
 # This code performs a slid experiments with MFCC/CNN.
 
+from genericpath import exists
 import os
 import time
 import wave
@@ -13,7 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import torchaudio
-# import librosa
+import librosa
 
 from torch.autograd import Variable
 
@@ -51,10 +52,10 @@ def plot_spectrogram(specgram, title=None, ylabel='freq'):
 
 
 
-def create_batches_rnd(batch_size,data_folder,data_list,N_snt,wlen,fact_amp):
+def create_batches_rnd(batch_size,data_list,N_snt,wlen,fact_amp):
     
  # defined sig_batch with 20,7 that is the size used for mfcc spec
- sig_batch=np.zeros([batch_size,40,17])
+ sig_batch=np.zeros([batch_size,40,18])
  lab_batch=np.zeros(batch_size)
   
  snt_id_arr=np.random.randint(N_snt, size=batch_size)
@@ -64,7 +65,7 @@ def create_batches_rnd(batch_size,data_folder,data_list,N_snt,wlen,fact_amp):
  for i in range(batch_size):
      
   # select a random sentence from the list 
-  track_file = data_folder+data_list['track_path_wav'].iloc[snt_id_arr[i]]
+  track_file = data_list['full_path'].iloc[snt_id_arr[i]]
 
   waveform, sr = torchaudio.load(track_file)
 
@@ -76,7 +77,10 @@ def create_batches_rnd(batch_size,data_folder,data_list,N_snt,wlen,fact_amp):
   # print('WARNING: stereo to mono: '+track_file)
   waveform = waveform[0]
 
+  # numpy_waveform = waveform[snt_beg:snt_end].numpy() if hasattr(waveform[snt_beg:snt_end], 'numpy') else np.asarray(waveform[snt_beg:snt_end])
+  # y = numpy_waveform * rand_amp_arr[i]
   y = waveform[snt_beg:snt_end]*rand_amp_arr[i]
+
   mfcc = MFCC(y)
 
   # plot_waveform(y, sr)
@@ -84,7 +88,7 @@ def create_batches_rnd(batch_size,data_folder,data_list,N_snt,wlen,fact_amp):
   # mfcc = librosa.feature.mfcc(y = y, sr = sample_rate)
   
   sig_batch[i,:]=mfcc
-  lab_batch[i]=data_list['language'].iloc[snt_id_arr[i]]
+  lab_batch[i]=data_list['instrument_id'].iloc[snt_id_arr[i]]
   
  inp=Variable(torch.from_numpy(sig_batch).float().cuda().contiguous())
  lab=Variable(torch.from_numpy(lab_batch).float().cuda().contiguous())
@@ -94,7 +98,7 @@ def create_batches_rnd(batch_size,data_folder,data_list,N_snt,wlen,fact_amp):
 
 
 # Reading cfg file
-options=read_conf_inp_mfcc('cfg/SLID_mfcc.cfg')
+options=read_conf_inp_mfcc('cfg/InstID_mfcc.cfg')
 
 #[windowing]
 fs=int(options.fs)
@@ -139,31 +143,30 @@ N_epochs=int(options.N_epochs)
 N_batches=int(options.N_batches)
 N_eval_epoch=int(options.N_eval_epoch)
 seed=int(options.seed)
+test_size = float(options.test_size)
 
 #[data]
-data_folder=options.data_folder
 output_folder=options.output_folder
+pt_file=options.pt_file
 
 # build base 
-italian_df = pd.read_csv(options.italian_csv, sep=';')
-portuguese_df = pd.read_csv(options.portuguese_csv, sep=';')
-spanish_df = pd.read_csv(options.spanish_csv, sep=';')
+df = pd.read_csv(options.csv_path, sep=',')
 
-italian_train, italian_test = train_test_split(italian_df, test_size=1/3, shuffle=True)
-portuguese_train, portuguese_test = train_test_split(portuguese_df, test_size=1/3, shuffle=True)
-spanish_train, spanish_test = train_test_split(spanish_df, test_size=1/3, shuffle=True)
+X = df.drop(columns=['instrument'])
+y = df['instrument']
+
+train, test, y_train, y_test = train_test_split(X, y, test_size=test_size, shuffle=True, random_state=seed, stratify=y)
 
 # training list
-train = pd.concat([ italian_train, portuguese_train, spanish_train ], sort=True)
 snt_tr=len(train.index)
 
 # test list
-test = pd.concat([ italian_test, portuguese_test, spanish_test ], sort=True)
 snt_te=len(test.index)
 
-language = test['language']
-print('Test labels confusion matrix:')
-print(confusion_matrix(language, language))
+instrument_id = test['instrument_id']
+
+print('Test labels confusion matrix (for name):')
+print(confusion_matrix(y_test, y_test))
 
 # Folder creation
 try:
@@ -188,7 +191,7 @@ Batch_dev=128
 
 
 # Feature extractor CNN
-CNN_arch = {'input_dim': [40, 17],
+CNN_arch = {'input_dim': [40, 18],
           'fs': fs,
           'cnn_N_filt': cnn_N_filt,
           'cnn_len_filt_x': cnn_len_filt_x,
@@ -234,19 +237,23 @@ DNN2_net=MLP(DNN2_arch)
 DNN2_net.cuda()
 
 
-# if pt_file!='none':
-#    checkpoint_load = torch.load(pt_file)
-#    CNN_net.load_state_dict(checkpoint_load['CNN_model_par'])
-#    DNN1_net.load_state_dict(checkpoint_load['DNN1_model_par'])
-#    DNN2_net.load_state_dict(checkpoint_load['DNN2_model_par'])
+if pt_file!='none' and exists(pt_file):
+   checkpoint_load = torch.load(pt_file)
+   CNN_net.load_state_dict(checkpoint_load['CNN_model_par'])
+   DNN1_net.load_state_dict(checkpoint_load['DNN1_model_par'])
+   DNN2_net.load_state_dict(checkpoint_load['DNN2_model_par'])
 
 optimizer_CNN = optim.RMSprop(CNN_net.parameters(), lr=lr,alpha=0.95, eps=1e-8) 
 optimizer_DNN1 = optim.RMSprop(DNN1_net.parameters(), lr=lr,alpha=0.95, eps=1e-8) 
 optimizer_DNN2 = optim.RMSprop(DNN2_net.parameters(), lr=lr,alpha=0.95, eps=1e-8) 
 
+# MFCC = torchaudio.transforms.MFCC(
+#   sample_rate=fs, 
+#   n_mfcc=40)
+
 MFCC = torchaudio.transforms.MFCC(
   sample_rate=fs, 
-  n_mfcc=256, 
+  n_mfcc=40, 
   melkwargs={
     "n_fft": 2048,
     "n_mels": 256,
@@ -268,7 +275,7 @@ for epoch in range(N_epochs):
 
   for i in range(N_batches):
 
-    [inp,lab]=create_batches_rnd(batch_size,data_folder,train,snt_tr,wlen,0.2)
+    [inp,lab]=create_batches_rnd(batch_size,train,snt_tr,wlen,0.2)
     pout=DNN2_net(DNN1_net(CNN_net(inp)))
     
     pred=torch.max(pout,dim=1)[1]
@@ -313,7 +320,7 @@ for epoch in range(N_epochs):
 
     for i in range(snt_te):
        
-     track_file = data_folder+test['track_path_wav'].iloc[i]
+     track_file = test['full_path'].iloc[i]
      signal, _ = torchaudio.load(track_file)
 
     #  removed tensor format to perform mfcc feature extraction 
@@ -323,7 +330,7 @@ for epoch in range(N_epochs):
       # print('WARNING: stereo to mono: '+track_file)
      signal = signal[0]
 
-     lab_batch=test['language'].iloc[i]
+     lab_batch=test['instrument_id'].iloc[i]
     
      # split signals into chunks
      beg_samp=0
@@ -332,7 +339,7 @@ for epoch in range(N_epochs):
      N_fr=int((signal.shape[0]-wlen)/(wshift))
      
      # defined sig_arr with 20,7 that is the size used for mfcc spec
-     sig_arr = np.zeros([Batch_dev,40,17])
+     sig_arr = np.zeros([Batch_dev,40,18])
      lab= Variable((torch.zeros(N_fr+1)+lab_batch).cuda().contiguous().long())
      pout=Variable(torch.zeros(N_fr+1,class_lay[-1]).float().cuda().contiguous())
      count_fr=0
@@ -349,7 +356,7 @@ for epoch in range(N_epochs):
              inp=Variable(torch.from_numpy(sig_arr).float().cuda().contiguous())
              pout[count_fr_tot-Batch_dev:count_fr_tot,:]=DNN2_net(DNN1_net(CNN_net(inp)))
              count_fr=0
-             sig_arr=np.zeros([Batch_dev,40,17])
+             sig_arr=np.zeros([Batch_dev,40,18])
    
      if count_fr>0:
       inp=Variable(torch.from_numpy(sig_arr[0:count_fr]).float().cuda().contiguous())

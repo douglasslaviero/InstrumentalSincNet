@@ -189,11 +189,8 @@ def read_conf_inp_mfcc(cfg_file):
 
  #[data]
  options.pt_file=Config.get('data', 'pt_file')
- options.data_folder=Config.get('data', 'data_folder')
+ options.csv_path=Config.get('data', 'csv_path')
  options.output_folder=Config.get('data', 'output_folder')
- options.italian_csv=Config.get('data', 'italian_csv')
- options.portuguese_csv=Config.get('data', 'portuguese_csv')
- options.spanish_csv=Config.get('data', 'spanish_csv')
 
  #[windowing]
  options.fs=Config.get('windowing', 'fs')
