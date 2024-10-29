@@ -117,6 +117,7 @@ N_epochs=int(options.N_epochs)
 N_batches=int(options.N_batches)
 N_eval_epoch=int(options.N_eval_epoch)
 seed=int(options.seed)
+test_size = float(options.test_size)
 
 #[data]
 output_folder=options.output_folder
@@ -128,7 +129,7 @@ df = pd.read_csv(options.csv_path, sep=',')
 X = df.drop(columns=['instrument'])
 y = df['instrument']
 
-train, test, y_train, y_test = train_test_split(X, y, test_size=1/3, shuffle=True, random_state=seed, stratify=y)
+train, test, y_train, y_test = train_test_split(X, y, test_size=test_size, shuffle=True, random_state=seed, stratify=y)
 
 # training list
 snt_tr=len(train.index)

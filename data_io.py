@@ -174,6 +174,8 @@ def read_conf_inp(cfg_file):
  options.N_batches=Config.get('optimization', 'N_batches')
  options.N_eval_epoch=Config.get('optimization', 'N_eval_epoch')
  options.seed=Config.get('optimization', 'seed')
+ options.test_size=Config.get('optimization', 'test_size')
+ 
  
  return options
 
@@ -237,6 +239,7 @@ def read_conf_inp_mfcc(cfg_file):
  options.N_batches=Config.get('optimization', 'N_batches')
  options.N_eval_epoch=Config.get('optimization', 'N_eval_epoch')
  options.seed=Config.get('optimization', 'seed')
+ options.test_size=Config.get('optimization', 'test_size')
  
  return options
 
