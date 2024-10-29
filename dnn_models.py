@@ -459,7 +459,107 @@ class SincNet(nn.Module):
        x = x.view(batch,-1)
 
        return x
-   
 
+
+class CNN(nn.Module):
     
+    def __init__(self,options):
+       super(CNN,self).__init__()
+    
+       self.cnn_N_filt=options['cnn_N_filt']
+       self.cnn_len_filt_x=options['cnn_len_filt_x']
+       self.cnn_len_filt_y=options['cnn_len_filt_y']
+       self.cnn_max_pool_len=options['cnn_max_pool_len']
+       
+       
+       self.cnn_act=options['cnn_act']
+       self.cnn_drop=options['cnn_drop']
+       
+       self.cnn_use_laynorm=options['cnn_use_laynorm']
+       self.cnn_use_batchnorm=options['cnn_use_batchnorm']
+       self.cnn_use_laynorm_inp=options['cnn_use_laynorm_inp']
+       self.cnn_use_batchnorm_inp=options['cnn_use_batchnorm_inp']
+       
+       self.input_dim=options['input_dim']
+       
+       self.fs=options['fs']
+       
+       self.N_cnn_lay=len(options['cnn_N_filt'])
+       self.conv  = nn.ModuleList([])
+       self.bn  = nn.ModuleList([])
+       self.ln  = nn.ModuleList([])
+       self.act = nn.ModuleList([])
+       self.drop = nn.ModuleList([])
+       
+             
+       if self.cnn_use_laynorm_inp:
+           self.ln0=LayerNorm(self.input_dim)
+           
+       if self.cnn_use_batchnorm_inp:
+           self.bn0=nn.BatchNorm1d([self.input_dim],momentum=0.05)
+           
+       current_input_x=self.input_dim[0]
+       current_input_y=self.input_dim[1]
+       
+       for i in range(self.N_cnn_lay):
+         
+         current_input_x=math.floor(current_input_x/self.cnn_max_pool_len[i])
+         current_input_y=math.floor(current_input_y/self.cnn_max_pool_len[i])
+         
+         if i == (self.N_cnn_lay -1):
+            next = i
+         else:
+            next = i + 1
+
+         N_filt=int(self.cnn_N_filt[next])
+         
+         # dropout
+         self.drop.append(nn.Dropout(p=self.cnn_drop[i]))
+         
+         # activation
+         self.act.append(act_fun(self.cnn_act[i]))
+                    
+         # layer norm initialization         
+         self.ln.append(LayerNorm([N_filt,current_input_x, current_input_y]))
+
+         self.bn.append(nn.BatchNorm2d(N_filt,current_input_x,momentum=0.05))
+
+         self.conv.append(nn.Conv2d(self.cnn_N_filt[i], self.cnn_N_filt[next], (self.cnn_len_filt_x[i], self.cnn_len_filt_y[i]), padding=1))
+              
+       self.out_dim=current_input_x*current_input_y*N_filt
+
+
+
+    def forward(self, x):
+       batch, n_mfcc, t=x.shape
+       
+       if bool(self.cnn_use_laynorm_inp):
+        x=self.ln0((x))
+        
+       if bool(self.cnn_use_batchnorm_inp):
+        x=self.bn0((x))
+        
+       x=x.view(batch, 1, n_mfcc, t)
+       
+       for i in range(self.N_cnn_lay):
+           
+         if self.cnn_use_laynorm[i]:
+          if i==0:
+           x = self.conv[i](x)
+           x = F.max_pool2d(torch.abs(x), self.cnn_max_pool_len[i])
+           x = self.drop[i](self.act[i](self.ln[i](x)))  
+          else:
+           x = self.conv[i](x)
+           x = F.max_pool2d(x, self.cnn_max_pool_len[i])
+           x = self.drop[i](self.act[i](self.ln[i](x)))   
+          
+         if self.cnn_use_batchnorm[i]:
+          x = self.drop[i](self.act[i](self.bn[i](F.max_pool2d(self.conv[i](x), self.cnn_max_pool_len[i]))))
+
+         if self.cnn_use_batchnorm[i]==False and self.cnn_use_laynorm[i]==False:
+          x = self.drop[i](self.act[i](F.max_pool2d(self.conv[i](x), self.cnn_max_pool_len[i])))
+       
+       x = x.view(batch,-1)
+
+       return x
    
