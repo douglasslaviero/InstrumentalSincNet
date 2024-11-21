@@ -7,3 +7,14 @@ epoch 60, loss_tr=0.471137 err_tr=0.161628 loss_te=1.533545 err_te=0.403031 err_
 epoch 70, loss_tr=0.383299 err_tr=0.131667 loss_te=1.655731 err_te=0.396325 err_te_snt=0.176734
 epoch 80, loss_tr=0.329143 err_tr=0.113398 loss_te=1.613248 err_te=0.379215 err_te_snt=0.156600
 epoch 90, loss_tr=0.283671 err_tr=0.096836 loss_te=1.692123 err_te=0.379199 err_te_snt=0.164206
+epoch 100, loss_tr=0.240374 err_tr=0.084128 loss_te=1.745012 err_te=0.371574 err_te_snt=0.153468
+epoch 110, loss_tr=0.209376 err_tr=0.071875 loss_te=1.865378 err_te=0.382905 err_te_snt=0.157494
+epoch 120, loss_tr=0.180890 err_tr=0.062747 loss_te=1.908966 err_te=0.368659 err_te_snt=0.143177
+epoch 130, loss_tr=0.160091 err_tr=0.054284 loss_te=1.964354 err_te=0.372718 err_te_snt=0.140045
+epoch 140, loss_tr=0.120091 err_tr=0.040938 loss_te=2.102329 err_te=0.368497 err_te_snt=0.131544
+epoch 150, loss_tr=0.109596 err_tr=0.037891 loss_te=2.319091 err_te=0.371758 err_te_snt=0.149441
+epoch 160, loss_tr=0.101696 err_tr=0.034635 loss_te=2.366343 err_te=0.368505 err_te_snt=0.148098
+epoch 170, loss_tr=0.098342 err_tr=0.033034 loss_te=2.278515 err_te=0.367344 err_te_snt=0.131991
+epoch 180, loss_tr=0.115746 err_tr=0.039505 loss_te=2.346720 err_te=0.367992 err_te_snt=0.161969
+epoch 190, loss_tr=0.102108 err_tr=0.034674 loss_te=2.235728 err_te=0.361744 err_te_snt=0.141834
+epoch 200, loss_tr=0.093602 err_tr=0.031797 loss_te=2.251375 err_te=0.365061 err_te_snt=0.138255
