@@ -24,6 +24,21 @@ from data_io import ReadList,read_conf_inp,str_to_bool
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
+import pandas as pd
+
+def show_and_save_confusion_matrix(y_true, y_pred):
+  matrix = confusion_matrix(y_true, y_pred, labels=[0,1,2,3,4,5,6,7,8,9,10])
+  
+  print(matrix)
+  
+  df = pd.DataFrame(
+    matrix, 
+    index=['actual_pia', 'actual_voi', 'actual_tru', 'actual_gac', 'actual_cla', 'actual_sax', 'actual_flu', 'actual_org', 'actual_vio', 'actual_cel', 'actual_gel'],
+    columns=['predicted_pia', 'predicted_voi', 'predicted_tru', 'predicted_gac', 'predicted_cla', 'predicted_sax', 'predicted_flu', 'predicted_org', 'predicted_vio', 'predicted_cel', 'predicted_gel'])
+  
+  df.to_csv('exp/confusion_matrix.csv', index=True)
+
+
 
 def create_batches_rnd(batch_size,data_list,N_snt,wlen,fact_amp):
     
@@ -141,6 +156,7 @@ instrument_id = test['instrument_id']
 
 print('Test labels confusion matrix (for name):')
 print(confusion_matrix(y_test, y_test))
+print(confusion_matrix(instrument_id, instrument_id,labels=[0,1,2,3,4,5,6,7,8,9,10]))
 
 # testing if it's was split correctly
 # print(len(df[df['instrument'] == 'cla']))

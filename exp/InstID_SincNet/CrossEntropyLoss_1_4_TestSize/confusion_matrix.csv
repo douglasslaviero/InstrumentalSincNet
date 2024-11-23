@@ -1,0 +1,12 @@
+,predicted_pia,predicted_voi,predicted_tru,predicted_gac,predicted_cla,predicted_sax,predicted_flu,predicted_org,predicted_vio,predicted_cel,predicted_gel
+actual_pia,159,2,0,5,2,3,2,3,1,0,3
+actual_voi,0,187,0,3,0,0,0,0,0,2,3
+actual_tru,3,3,122,0,3,6,1,0,1,0,5
+actual_gac,3,8,0,140,0,0,0,3,0,0,5
+actual_cla,2,1,3,1,106,7,2,1,2,1,0
+actual_sax,2,2,0,2,1,137,0,1,6,1,5
+actual_flu,5,2,1,4,3,3,88,1,1,1,4
+actual_org,1,2,1,1,2,1,0,161,1,0,1
+actual_vio,4,4,1,2,2,3,2,4,113,6,4
+actual_cel,0,0,0,3,0,0,2,0,4,86,2
+actual_gel,1,12,1,3,0,0,0,4,3,1,165
